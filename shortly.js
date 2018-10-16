@@ -1,8 +1,10 @@
+// import { WSAEUSERS } from 'constants';
+
 var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -22,13 +24,30 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+// added app.use
+app.use(session ({
+  secret: '3434'
+})
+);
 
-app.get('/', 
+// added restrict function
+function restrict (req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('login');
+  }
+}
+
+// redirecting to login page by calling restrict
+app.get('/', restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
+// redirecting to login page by calling restrict
+app.get('/create', restrict, 
 function(req, res) {
   res.render('index');
 });
@@ -39,6 +58,25 @@ function(req, res) {
     res.status(200).send(links.models);
   });
 });
+
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
+
+// //working on this one for authentication
+// app.post('/login', function (req, res) {
+//   var username = req.body.username;
+//   var password = req.body.password;
+
+//   if (username === 'demo') {
+//     req.session.regenerate(function () {
+//       req.session.user = username;
+//       res.redirect('/signup');
+//     })
+//   }
+// });
+
 
 app.post('/links', 
 function(req, res) {
@@ -75,9 +113,29 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+app.post('/login', 
+function(req, res) {
+  var username = req.body.username;
 
+  // if (!username) {
+  //   console.log('Not a valid url: ', uri);
+  //   return res.sendStatus(404);
+  // }
 
-
+  new User({ username : username }).fetch().then(function(found) {
+    if (found) {
+      res.status(200).send(found.attributes);
+    } else {
+      Users.create({
+          username: username,
+          password: password
+      })
+      .then(function(newUser) {
+        res.status(200).send(newUser);
+      });
+    };
+  });
+});
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
