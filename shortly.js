@@ -34,14 +34,14 @@ app.use(session({
 }));
 
 // added function for redirecting
-function checkUser(req, res, next) {
+var checkUser = function (req, res, next) {
   if (req.session.user) {
     next();
   } else {
     req.session.error = 'Access denied!';
     res.redirect('login');
   }
-}
+};
 
 // redirecting to login page by calling restrict
 app.get('/', checkUser,
@@ -140,7 +140,7 @@ app.post('/login',
           res.redirect('/create');
         }
       } else {
-        res.status(200).send('login failed')
+        res.status(200).send('login failed');
       }
     });
   });
